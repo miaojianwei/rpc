@@ -89,6 +89,7 @@ func (r Client) Do(l Logger, req *http.Request) (resp *http.Response, err error)
 
 type ErrorInfo struct {
 	Err string			`json:"error"`
+	Reqid string		`json:"reqid"`
 	Details []string	`json:"details"`
 	Code int			`json:"code"`
 }
@@ -108,6 +109,7 @@ func ResponseError(resp *http.Response) (err error) {
 
 	e := &ErrorInfo{
 		Details: resp.Header["X-Log"],
+		Reqid: resp.Header.Get("X-Reqid"),
 		Code: resp.StatusCode,
 	}
 	if resp.ContentLength != 0 {
@@ -126,9 +128,14 @@ func callRet(l Logger, ret interface{}, resp *http.Response) (err error) {
 
 	if resp.StatusCode/100 == 2 {
 		if ret != nil && resp.ContentLength != 0 {
-			return json.NewDecoder(resp.Body).Decode(ret)
+			err = json.NewDecoder(resp.Body).Decode(ret)
+			if err != nil {
+				return
+			}
 		}
-		return nil
+		if resp.StatusCode == 200 {
+			return nil
+		}
 	}
 	return ResponseError(resp)
 }
