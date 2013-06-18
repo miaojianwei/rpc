@@ -112,11 +112,13 @@ func ResponseError(resp *http.Response) (err error) {
 		Reqid: resp.Header.Get("X-Reqid"),
 		Code: resp.StatusCode,
 	}
-	if resp.ContentLength != 0 {
-		if ct, ok := resp.Header["Content-Type"]; ok && ct[0] == "application/json" {
-			var ret1 errorRet
-			json.NewDecoder(resp.Body).Decode(&ret1)
-			e.Err = ret1.Error
+	if resp.StatusCode > 299 {
+		if resp.ContentLength != 0 {
+			if ct, ok := resp.Header["Content-Type"]; ok && ct[0] == "application/json" {
+				var ret1 errorRet
+				json.NewDecoder(resp.Body).Decode(&ret1)
+				e.Err = ret1.Error
+			}
 		}
 	}
 	return e
