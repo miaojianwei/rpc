@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 )
 
+var UserAgent = "Golang qiniu/rpc package"
+
 // --------------------------------------------------------------------
 
 type Client struct {
@@ -71,6 +73,7 @@ func (r Client) Do(l Logger, req *http.Request) (resp *http.Response, err error)
 		req.Header.Set("X-Reqid", l.ReqId())
 	}
 
+	req.Header.Set("User-Agent", UserAgent)
 	resp, err = r.Client.Do(req)
 	if err != nil {
 		return
