@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 )
 
+var UserAgent = "Golang qiniu/rpc package"
+
 // --------------------------------------------------------------------
 
 type Client struct {
@@ -71,6 +73,7 @@ func (r Client) Do(l Logger, req *http.Request) (resp *http.Response, err error)
 		req.Header.Set("X-Reqid", l.ReqId())
 	}
 
+	req.Header.Set("User-Agent", UserAgent)
 	resp, err = r.Client.Do(req)
 	if err != nil {
 		return
@@ -89,6 +92,7 @@ func (r Client) Do(l Logger, req *http.Request) (resp *http.Response, err error)
 
 type ErrorInfo struct {
 	Err string			`json:"error"`
+	Reqid string		`json:"reqid"`
 	Details []string	`json:"details"`
 	Code int			`json:"code"`
 }
@@ -108,13 +112,16 @@ func ResponseError(resp *http.Response) (err error) {
 
 	e := &ErrorInfo{
 		Details: resp.Header["X-Log"],
+		Reqid: resp.Header.Get("X-Reqid"),
 		Code: resp.StatusCode,
 	}
-	if resp.ContentLength != 0 {
-		if ct, ok := resp.Header["Content-Type"]; ok && ct[0] == "application/json" {
-			var ret1 errorRet
-			json.NewDecoder(resp.Body).Decode(&ret1)
-			e.Err = ret1.Error
+	if resp.StatusCode > 299 {
+		if resp.ContentLength != 0 {
+			if ct, ok := resp.Header["Content-Type"]; ok && ct[0] == "application/json" {
+				var ret1 errorRet
+				json.NewDecoder(resp.Body).Decode(&ret1)
+				e.Err = ret1.Error
+			}
 		}
 	}
 	return e
@@ -126,9 +133,14 @@ func callRet(l Logger, ret interface{}, resp *http.Response) (err error) {
 
 	if resp.StatusCode/100 == 2 {
 		if ret != nil && resp.ContentLength != 0 {
-			return json.NewDecoder(resp.Body).Decode(ret)
+			err = json.NewDecoder(resp.Body).Decode(ret)
+			if err != nil {
+				return
+			}
 		}
-		return nil
+		if resp.StatusCode == 200 {
+			return nil
+		}
 	}
 	return ResponseError(resp)
 }
