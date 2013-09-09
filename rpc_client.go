@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"strings"
+	"bytes"
 	"io"
 	"net/http"
 	"net/url"
@@ -65,6 +66,16 @@ func (r Client) PostWithForm(
 
 	msg := url.Values(data).Encode()
 	return r.PostWith(l, url1, "application/x-www-form-urlencoded", strings.NewReader(msg), len(msg))
+}
+
+func (r Client) PostWithJson(
+	l Logger, url1 string, data interface{}) (resp *http.Response, err error) {
+
+	msg, err := json.Marshal(data)
+	if err != nil {
+		return
+	}
+	return r.PostWith(l, url1, "application/json", bytes.NewReader(msg), len(msg))
 }
 
 func (r Client) Do(l Logger, req *http.Request) (resp *http.Response, err error) {
@@ -148,6 +159,15 @@ func callRet(l Logger, ret interface{}, resp *http.Response) (err error) {
 func (r Client) CallWithForm(l Logger, ret interface{}, url1 string, param map[string][]string) (err error) {
 
 	resp, err := r.PostWithForm(l, url1, param)
+	if err != nil {
+		return err
+	}
+	return callRet(l, ret, resp)
+}
+
+func (r Client) CallWithJson(l Logger, ret interface{}, url1 string, param interface{}) (err error) {
+
+	resp, err := r.PostWithJson(l, url1, param)
 	if err != nil {
 		return err
 	}
