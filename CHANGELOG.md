@@ -1,5 +1,12 @@
 #CHANGELOG
 
+## v2.0.01
+
+2013-03-20 Issue [#7](https://github.com/qiniu/rpc/pull/7):
+
+- support jsonrpc
+
+
 ## v2.0.00
 
 2013-03-20 Issue [#5](https://github.com/qiniu/rpc/pull/5):
